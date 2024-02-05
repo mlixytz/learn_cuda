@@ -13,7 +13,6 @@ __global__ void vectorAdd(const float *A, const float *B, float *C, int numEleme
 
 int main()
 {
-
     // 元素总数
     int numElements = 50000;
     size_t size = numElements * sizeof(float);

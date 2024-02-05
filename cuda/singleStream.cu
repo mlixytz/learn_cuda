@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include "error.cuh"
 
 // (A+B)/2=C
 #define N (1024 * 1024) // 每个流执行数据大小
@@ -33,18 +34,18 @@ int main()
     int *host_a, *host_b, *host_c;
     int *dev_a, *dev_b, *dev_c;
     // 创建计时器
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
+    CHECK(cudaEventCreate(&start));
+    CHECK(cudaEventCreate(&stop));
     // 初始化流
     cudaStreamCreate(&stream);
     // 在GPU端申请存储
-    cudaMalloc((void **)&dev_a, N * sizeof(int));
-    cudaMalloc((void **)&dev_b, N * sizeof(int));
-    cudaMalloc((void **)&dev_c, N * sizeof(int));
+    CHECK(cudaMalloc((void **)&dev_a, N * sizeof(int)));
+    CHECK(cudaMalloc((void **)&dev_b, N * sizeof(int)));
+    CHECK(cudaMalloc((void **)&dev_c, N * sizeof(int)));
     // 在CPU端申请使用锁页内存
-    host_a = (int *)malloc(FULL * sizeof(int), cudaHostAllocDefault);
-    host_b = (int *)malloc(FULL * sizeof(int), cudaHostAllocDefault);
-    host_c = (int *)malloc(FULL * sizeof(int), cudaHostAllocDefault);
+    CHECK(cudaHostAlloc((void **)&host_a, FULL * sizeof(int), cudaHostAllocDefault));
+    CHECK(cudaHostAlloc((void **)&host_b, FULL * sizeof(int), cudaHostAllocDefault));
+    CHECK(cudaHostAlloc((void **)&host_c, FULL * sizeof(int), cudaHostAllocDefault));
     // 初始化向量A，B向量
     for (int i = 0; i < FULL; i++)
     {
