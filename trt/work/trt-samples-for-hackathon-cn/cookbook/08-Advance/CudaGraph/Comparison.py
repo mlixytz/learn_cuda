@@ -122,7 +122,8 @@ def run():
         cudart.cudaMemcpyAsync(bufferH[i].ctypes.data, bufferD[i], bufferH[i].nbytes, cudart.cudaMemcpyKind.cudaMemcpyDeviceToHost, stream)
     #cudart.cudaStreamSynchronize(stream)
     _, graph = cudart.cudaStreamEndCapture(stream)
-    _, graphExe, _ = cudart.cudaGraphInstantiate(graph, b"", 0)
+    # _, graphExe, _ = cudart.cudaGraphInstantiate(graph, b"", 0)
+    _, graphExe = cudart.cudaGraphInstantiate(graph, 0)
 
     cudart.cudaGraphLaunch(graphExe, stream)
     cudart.cudaStreamSynchronize(stream)

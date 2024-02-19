@@ -5,20 +5,39 @@
 #define BLOCK_SIZE 16
 
 // 每个kernel计算结果矩阵中的一个元素
-__global__ void gpu_matrix_mult(int *a, int *b, int *c, int m, int n, int k)
+// 线程数量 = 输出矩阵元素数量
+__global__ void gpu_matrix_mult_shared(int *a, int *b, int *d_result, int n)
 {
-    // 二维线程格、二维线程块
+    __shared__ int tile_a[BLOCK_SIZE][BLOCK_SIZE];
+    __shared__ int tile_b[BLOCK_SIZE][BLOCK_SIZE];
+
+    // 当前线程的索引
     int row = blockIdx.y * blockDim.y + threadIdx.y;
     int col = blockIdx.x * blockDim.x + threadIdx.x;
-    int sum = 0;
-    if (col < k && row < m)
+
+    int tmp = 0;
+    int idx;
+
+    // 把矩阵分块
+    for (int sub = 0; sub < gridDim.x; ++sub)
     {
-        for (int i = 0; i < n; i++)
+        idx = row * n + sub * BLOCK_SIZE + threadIdx.x;
+        tile_a[threadIdx.y][threadIdx.x] = row < n && (sub * BLOCK_SIZE + threadIdx.x) < n ? a[idx] : 0;
+        idx = sub * BLOCK_SIZE + threadIdx.y * n + col;
+        tile_b[threadIdx.y][threadIdx.x] = col < n && (sub * BLOCK_SIZE + threadIdx.y) < n ? b[idx] : 0;
+
+        __syncthreads();
+        for (int k = 0; k < BLOCK_SIZE; ++k)
         {
-            sum += a[row * n + i] * b[i * k + col];
+            tmp += tile_a[threadIdx.y][k] * tile_b[k][threadIdx.x];
         }
+        __syncthreads();
     }
-    c[row * k + col] = sum;
+
+    if (row < n && col < n)
+    {
+        d_result[row * n + col] = tmp;
+    }
 }
 
 int main(int argc, char const *argv[])
@@ -67,7 +86,7 @@ int main(int argc, char const *argv[])
     dim3 dimGrid(grid_cols, grid_rows);
     dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
 
-    gpu_matrix_mult<<<dimGrid, dimBlock>>>(d_a, d_b, d_c, m, n, k);
+    gpu_matrix_mult_shared<<<dimGrid, dimBlock>>>(d_a, d_b, d_c, n);
 
     CHECK(cudaMemcpy(d_c, h_c, sizeof(int) * m * k, cudaMemcpyDeviceToHost));
     CHECK(cudaEventRecord(stop));

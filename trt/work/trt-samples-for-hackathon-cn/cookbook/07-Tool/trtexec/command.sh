@@ -37,8 +37,7 @@ trtexec \
     > result-02.log 2>&1
 
 # 03-Load TensorRT engine built above and do inference
-trtexec model-02.plan \
-    --trt \
+trtexec --loadEngine=model-02.plan \
     --shapes=tensorX:4x1x28x28 \
     --noDataTransfers \
     --useSpinWait \
